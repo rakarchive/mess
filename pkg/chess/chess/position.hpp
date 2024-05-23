@@ -33,9 +33,6 @@ namespace Chess {
     // allow fetching information and manipulating said position.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct Position {
-        // 8x8 Mailbox position representation.
-        std::array<ColoredPiece, Square::N> Mailbox;
-
         // BitBoard Board representation.
         // x6 piece bbs, x2 color bbs.
         std::array<BitBoard, Piece::N> PieceBBs;
@@ -81,10 +78,6 @@ namespace Chess {
             // Assert that the square and the piece are valid, and that
             // the target square is empty so that a piece can be placed.
             assert(square != Square::None && piece != ColoredPiece::None);
-            assert(Mailbox[static_cast<uint8_t>(square)] == ColoredPiece::None);
-
-            // Insert the given piece into the mailbox representation.
-            Mailbox[static_cast<uint8_t>(square)] = piece;
 
             // Insert the given piece into the BitBoard representation.
             PieceBBs[static_cast<uint8_t>(piece.Piece())].Flip(square);
@@ -101,13 +94,10 @@ namespace Chess {
             assert(square != Square::None);
 
             // Fetch the piece present at the given square.
-            const ColoredPiece piece = Mailbox[static_cast<uint8_t>(square)];
+            const ColoredPiece piece = (*this)[square];
 
             // Assert that there is a piece to remove.
             assert(piece != ColoredPiece::None);
-
-            // Remove the piece from the mailbox representation.
-            Mailbox[static_cast<uint8_t>(square)] = ColoredPiece::None;
 
             // Remove the piece from the BitBoard representation.
             PieceBBs[static_cast<uint8_t>(piece.Piece())].Flip(square);
@@ -207,7 +197,6 @@ namespace Chess {
             // Zero out the board representation.
             PieceBBs = {};
             ColorBBs = {};
-            Mailbox = {};
 
             // Populate the board representation.
             for (uint8_t sq = 0; sq < Square::N; sq++)
@@ -219,7 +208,21 @@ namespace Chess {
 
         // Indexing Position by Square returns the ColoredPiece at that Square.
         constexpr inline ColoredPiece operator[](const Square sq) const {
-            return Mailbox[static_cast<uint8_t>(sq)];
+            const auto& position = *this;
+
+            const Color color = position[Color::White][sq] ? Color::White :
+                                position[Color::Black][sq] ? Color::Black : Color::None;
+
+            if (color == Color::None) return ColoredPiece::None;
+
+            const Piece piece = position[Piece::Pawn][sq] ? Piece::Pawn :
+                                position[Piece::Knight][sq] ? Piece::Knight :
+                                position[Piece::Bishop][sq] ? Piece::Bishop :
+                                position[Piece::Rook][sq] ? Piece::Rook :
+                                position[Piece::King][sq] ? Piece::King :
+                                position[Piece::Queen][sq] ? Piece::Queen : Piece::None;
+
+            return piece + color;
         }
 
         // ToString converts the position to a human-readable string representation.
@@ -230,7 +233,7 @@ namespace Chess {
                 board += "| ";
 
                 for (uint8_t file = 0; file < File::N; file++) {
-                    board += Mailbox[rank * 8 + file].ToString() + " | ";
+                    board += (*this)[Square(rank * 8 + file)].ToString() + " | ";
                 }
 
                 board += Rank(rank).ToString();
@@ -280,8 +283,8 @@ namespace Chess {
             hash += Keys::CastlingRights(position.Rights);
 
             for (uint8_t square = 0; square < Square::N; square++)
-                if (position.Mailbox[square] != ColoredPiece::None)
-                    hash += Keys::PieceOnSquare(position.Mailbox[square], Square(square));
+                if (position[Square(square)] != ColoredPiece::None)
+                    hash += Keys::PieceOnSquare(position[Square(square)], Square(square));
 
             return hash;
         }
