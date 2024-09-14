@@ -23,7 +23,7 @@ int main(int argc, char const *argv[]) {
     Board board = Board(FEN(fen));
 
     const auto start = std::chrono::steady_clock::now();
-    const auto nodes = board.Perft<false, true>(std::atoi(dep));
+    const auto nodes = board.Perft<true, true>(std::atoi(dep));
     const auto end = std::chrono::steady_clock::now();
 
     const std::chrono::duration<double> delta = end - start;

@@ -22,7 +22,7 @@ override SRC_PATH = cmd/$(PROGRAM)
 # ====================== #
 # Engine Executable Name #
 # ====================== #
-EXE = bin/$(PROGRAM)
+EXE = $(PROGRAM)
 
 # ======================= #
 # Code Building Directory #
@@ -74,6 +74,17 @@ default: build
 build:
 	cmake $(SRC_PATH) -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CONFIG)   \
 	-DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -G Ninja
+	cmake --build $(BUILD_DIR) --config $(CONFIG)
+	@$(CP) $(BUILD_DIR)/$(PROGRAM)$(EXTENSION) $(EXE)$(EXTENSION)
+
+pgo-build:
+	cmake $(SRC_PATH) -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CONFIG)   \
+	-DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -G Ninja -DPGO=True
+	cmake --build $(BUILD_DIR) --config $(CONFIG)
+	$(BUILD_DIR)/mess
+	llvm-profdata merge -output=$(BUILD_DIR)/pgo.profdata $(BUILD_DIR)/pgo.profraw
+	cmake $(SRC_PATH) -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CONFIG)   \
+	-DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -G Ninja -DPGO=True
 	cmake --build $(BUILD_DIR) --config $(CONFIG)
 	@$(CP) $(BUILD_DIR)/$(PROGRAM)$(EXTENSION) $(EXE)$(EXTENSION)
 
